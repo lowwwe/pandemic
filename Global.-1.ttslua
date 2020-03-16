@@ -2,8 +2,13 @@
 
 --[[ The onLoad event is called after the game save finishes loading. --]]
 function onLoad()
-    --[[ print('onLoad!') --]]
+    self.createButton({	click_function = 'pressed', label = 'X',function_owner = self, position = {0, 0.18, 0}, rotation = {0, 0, 0}, width = 1000, height = 1000, font_size = 500  })
 end
+
+function creatButtonContagen()
+
+end
+
 
 --[[ The onUpdate event is called once per frame. --]]
 function onUpdate()

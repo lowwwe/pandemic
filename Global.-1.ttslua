@@ -37,24 +37,13 @@ local Infection_Track = {
 	{-2.085,1.3,5.968},
 	{-2.686,1.3,5.699},
 	{-4.479,1.3,4.334}
-
-
-
-
-
-
-
 }
 
-local Centres = {
-	{-8.5,3.6,11},
-{3.19,3.6,12},
-{10.4,3.6,5.5},
-{10.68,3.6,-5},
-{0.58, 3.6,-11},
-{-8.8,3.6,-8.3},
-{-12.2,3.6,0.5}
-}
+local Centres = {{-8.5,3.6,11},{3.19,3.6,12},{10.4,3.6,5.5},{10.68,3.6,-5},{0.58, 3.6,-11},{-8.8,3.6,-8.3},{-12.2,3.6,0.5}}
+
+local coasterIDs = {"156585","f69abf","0d0fef","31b265","4e7bdc","cfdf8e" }
+local coasterZoneIDs ={"0c267e","e8c412","b6029e", "a86ccd", "dd41f3", "8d0dc8"}
+
 
 local RedFaces ={8,6,6,1,1,4 }
 local YellowFaces = {8,5,5,2,2,4}
@@ -65,6 +54,50 @@ function onLoad()
 create_BioHazard_button()
 end
 
+function CheckZone(zoneNo)
+	local infectedDice = getObjectFromGUID(coasterZoneIDs[zoneNo]).getObjects()
+	local red = 0
+	local yellow = 0
+	local blue = 0
+	local purple = 0
+	local black = 0
+
+	for _, die in ipairs(infectedDice) do
+		waitFrames(10)
+		if die.getName() == "Red"   then
+			red = red + 1
+		end
+		if die.getName() == "Yellow"   then
+			yellow = yellow + 1
+		end
+		if die.getName() == "Blue"   then
+			blue = blue + 1
+		end
+		if die.getName() == "Purple"   then
+			purple = purple + 1
+		end
+		if die.getName() == "Black"   then
+			black = black + 1
+		end
+	end
+	if red > 2 or blue > 2 or yellow > 2 or black > 2 or purple > 2 then
+		FlipCoaster(zoneNo)
+	end
+end
+
+
+function FlipCoaster(costerID)
+	function Flip()
+		tile = getObjectFromGUID(coasterIDs[costerID])
+		tile.setLock(false)
+		tile.flip()
+		waitFrames(75)
+		tile.setLock(true)
+		return 1
+	end
+	startLuaCoroutine(self, Flip)
+end
+
 function EndTurn()
 	startLuaCoroutine(Global, 'EndTurnTime')
 end
@@ -73,8 +106,10 @@ function PlaceDice()
 	startLuaCoroutine(Global, 'PlaceDiceTime')
 end
 
+function Undo_BioHazard_Dice()
 
-
+	startLuaCoroutine(Global, 'Undo_BioHazard_DiceTime')
+end
 function waitFrames(frames)
 	while frames > 0 do
 		coroutine.yield(0)
@@ -117,12 +152,15 @@ function create_BioHazard_button()
 	getObjectFromGUID(CDC_DiscID).createButton(params)
 end
 
-function Undo_BioHazard_Dice()
+function Undo_BioHazard_DiceTime()
 	if CurrentInfectionPoint > 1 then
 		CurrentInfectionPoint = CurrentInfectionPoint - 1
 		getObjectFromGUID(Re_Ball_ID).setPosition(Infection_Track[CurrentInfectionPoint])
 	end
+
+	return 1
 end
+
 function bioHazard_Dice()
 
 	CurrentInfectionPoint = CurrentInfectionPoint + 1
@@ -298,5 +336,8 @@ for _, die in ipairs(newDice) do
 	waitFrames(90)
 	until  no_Purple_Dice  --no more purple Dice
 	print ("finished")
+	for i=1 , 6 do
+		CheckZone(i)
+	end
 		return 1
 end

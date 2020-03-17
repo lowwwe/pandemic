@@ -1,16 +1,265 @@
 --[[ Lua code. See documentation: https://api.tabletopsimulator.com/ --]]
+local CDC_DiscID ="0ceb73"
+local Re_Ball_ID ="a2ee29"
+local CurrentInfectionPoint = 1
+local InfectionRate = 3
+local InfectionBagID = "fd8a16"
+local DiceAreaID ="ba46a1"
+local TreatmentAreaID ="b951e9"
+local Infection_Track = {
+	{ -1.519, 1.2, -4.775 },
+	{-0.8508, 1.2, -4.929 },
+	{ -0.164,1.2,-4.934},
+	{ 0.514,1.3,-4.848 },
+	{1.678,1.3,-4.584 },
+	{ 2.362,1.3,-4.3254 },
+	{2.944,1.2,-3.895 },
+	{3.455,1.3,-3.545 },
+	{4.27,1.3,-2.59},
+	{4.607,1.3,-2.03},
+	{4.9415,1.3,-1.439},
+	{5.1503,1.3,-0.858},
+	{5.377,1.3,0.40},
+	{5.377,1.3,1.1028},
+	{5.32,1.3,1.744},
+	{5.08,1.3,2.427},
+	{4.647,1.3,3.463},
+	{4.2185,1.3,4.095},
+	{3.794,1.3,4.577},
+	{3.304,1.3,5.059},
+	{2.278,1.3,5.749},
+	{1.709,1.3,5.9866},
+	{1.111,1.3,6.158},
+	{0.414,1.3,6.255},
+	{-0.781,1.3,6.33},
+	{-1.4807,1.3,6.185},
+	{-2.085,1.3,5.968},
+	{-2.686,1.3,5.699},
+	{-4.479,1.3,4.334}
 
+
+
+
+
+
+
+}
+
+local Centres = {
+	{-8.5,3.6,11},
+{3.19,3.6,12},
+{10.4,3.6,5.5},
+{10.68,3.6,-5},
+{0.58, 3.6,-11},
+{-8.8,3.6,-8.3},
+{-12.2,3.6,0.5}
+}
+
+local RedFaces ={8,6,6,1,1,4 }
+local YellowFaces = {8,5,5,2,2,4}
+local BlueFaces = { 8,1,2,6,6,3}
+local BlackFaces = {8,3,5,3,3,4}
 --[[ The onLoad event is called after the game save finishes loading. --]]
 function onLoad()
-    self.createButton({	click_function = 'pressed', label = 'X',function_owner = self, position = {0, 0.18, 0}, rotation = {0, 0, 0}, width = 1000, height = 1000, font_size = 500  })
+create_BioHazard_button()
 end
 
-function creatButtonContagen()
+function EndTurn()
+	startLuaCoroutine(Global, 'EndTurnTime')
+end
 
+function PlaceDice()
+	startLuaCoroutine(Global, 'PlaceDiceTime')
+end
+
+
+
+function waitFrames(frames)
+	while frames > 0 do
+		coroutine.yield(0)
+		frames = frames - 1
+	end
 end
 
 
 --[[ The onUpdate event is called once per frame. --]]
 function onUpdate()
-    --[[ print('onUpdate loop!') --]]
+--    [[ print('onUpdate loop!') ]]
+end
+
+function create_BioHazard_button()
+	local params = {}
+	params.click_function = "bioHazard_Dice"
+	params.label = "BioHazard"
+	params.position = {2.5, 0.1, 0.5}
+	params.rotation = {0,180, 0}
+	params.width = 700
+	params.height = 200
+	params.font_size = 60
+	getObjectFromGUID(CDC_DiscID).createButton(params)
+	params.click_function = "EndTurn"
+	params.label = "End Turn"
+	params.position = {2.7, 0.1, -0.1}
+	getObjectFromGUID(CDC_DiscID).createButton(params)
+	params.click_function = "PlaceDice"
+	params.label = "Place Infection Dice"
+	params.position = {2.5, 0.1, -0.7}
+	getObjectFromGUID(CDC_DiscID).createButton(params)
+	params.click_function = "Undo_BioHazard_Dice"
+	params.label = "Undo BioHazard"
+	params.position = {5, 0.1, 0.0}
+	params.rotation = {0,180, 0}
+	params.width = 700
+	params.height = 200
+	params.font_size = 60
+	params.color = {r=0.90,g=0.0,b=0.0}
+	getObjectFromGUID(CDC_DiscID).createButton(params)
+end
+
+function Undo_BioHazard_Dice()
+	if CurrentInfectionPoint > 1 then
+		CurrentInfectionPoint = CurrentInfectionPoint - 1
+		getObjectFromGUID(Re_Ball_ID).setPosition(Infection_Track[CurrentInfectionPoint])
+	end
+end
+function bioHazard_Dice()
+
+	CurrentInfectionPoint = CurrentInfectionPoint + 1
+	getObjectFromGUID(Re_Ball_ID).setPosition(Infection_Track[CurrentInfectionPoint])
+	print(CurrentInfectionPoint)
+	if CurrentInfectionPoint == 5 then
+		startLuaCoroutine(Global,"CallOutBreakTime")
+	end
+	if CurrentInfectionPoint == 9 then
+		startLuaCoroutine(Global,"CallOutBreakTime")
+	end
+	if CurrentInfectionPoint == 13 then
+		InfectionRate = 4
+		startLuaCoroutine(Global,"CallOutBreakTime")
+	end
+	if CurrentInfectionPoint == 17 then
+		InfectionRate = 4
+		startLuaCoroutine(Global,"CallOutBreakTime")
+	end
+	if CurrentInfectionPoint == 21 then
+		InfectionRate = 5
+		startLuaCoroutine(Global,"CallOutBreakTime")
+	end
+	if CurrentInfectionPoint == 25 then
+		InfectionRate = 5
+		startLuaCoroutine(Global,"CallOutBreakTime")
+	end
+	if CurrentInfectionPoint == 29 then
+		print("Game Over")
+	end
+end
+
+function CallOutBreakTime()
+	local params = {}
+	params.position = {-22,6.0,13}
+	local displacement = 0.8
+	local bag = getObjectFromGUID(InfectionBagID)
+	for i =1, InfectionRate do
+		bag.takeObject(params)
+		params.position[1] = params.position[1] + displacement
+		waitFrames(10)
+	end
+	local TreatmentDice = getObjectFromGUID(TreatmentAreaID).getObjects()
+	for _, die in ipairs(TreatmentDice) do
+		waitFrames(10)
+		if die.getName() != "Ring" and die.getName() != "Red Ball" and die.getName() != "Blue Ball"   then
+			die.setPositionSmooth({-20,6.0,11}, false,false)
+		end
+	end
+
+	waitFrames(60)
+	local newDice = getObjectFromGUID(DiceAreaID).getObjects()
+
+
+	for _, die in ipairs(newDice) do
+		die.roll()
+		waitFrames(5)
+		die.roll()
+		waitFrames(5)
+		die.roll()
+	end
+
+	return 1
+end
+
+function EndTurnTime()
+	local params = {}
+	params.position = {-22,6.0,11}
+	local displacement = 0.8
+	local bag = getObjectFromGUID(InfectionBagID)
+	for i =1, InfectionRate do
+		bag.takeObject(params)
+		params.position[1] = params.position[1] + displacement
+		waitFrames(10)
+	end
+	waitFrames(120)
+	local newDice = getObjectFromGUID(DiceAreaID).getObjects()
+
+	for _, die in ipairs(newDice) do
+		die.roll()
+		waitFrames(5)
+		die.roll()
+		waitFrames(5)
+		die.roll()
+	end
+
+	return 1
+end
+
+function PlaceDiceTime()
+	local offset = 1
+local newDice = getObjectFromGUID(DiceAreaID).getObjects()
+for _, die in ipairs(newDice) do
+		waitFrames(10)
+		if die.getValue() == 1 then
+				die.setPositionSmooth(Centres[7], false,false)
+		else
+		if die.getName() == "Red" then
+			die.setPositionSmooth(Centres[RedFaces[die.getValue()]], false,false)
+		else
+			if die.getName() == "Blue" then
+				die.setPositionSmooth(Centres[BlueFaces[die.getValue()]], false,false)
+			else
+				if die.getName() == "Yellow" then
+					die.setPositionSmooth(Centres[YellowFaces[die.getValue()]], false,false)
+				else
+					if die.getName() == "Black" then
+						die.setPositionSmooth(Centres[BlackFaces[die.getValue()]], false,false)
+					else
+						if die.getName() == "Purple" then
+							if die.getValue() == 3  then
+								die.setPositionSmooth(Centres[5], false,false)
+							end
+							if die.getValue() == 5  then
+								die.setPositionSmooth(Centres[2], false,false)
+							end
+							if die.getValue() == 6  then
+								die.setPositionSmooth(Centres[4], false,false)
+							end
+							if die.getValue() == 2  then
+								die.setValue(2)
+								die.setPositionSmooth({-13,2,18+offset}, false,false)
+								offset = offset + 1
+
+							end
+							if die.getValue() == 4  then
+								die.setValue(4)
+								die.setPositionSmooth({-13,2,18+offset}, false,false)
+								offset = offset + 1
+
+							end
+							end
+						end
+					end
+				end
+			end
+		end
+	end
+
+	return 1
 end

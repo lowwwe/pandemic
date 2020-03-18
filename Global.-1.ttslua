@@ -1,12 +1,17 @@
 --[[ Lua code. See documentation: https://api.tabletopsimulator.com/ --]]
 local CDC_DiscID ="0ceb73"
 local Re_Ball_ID ="a2ee29"
+local BlueBallID = "700bc2"
+local RingID = "070292"
 local CurrentInfectionPoint = 1
+local CurrentOutBreakPoint = 1
 local InfectionRate = 3
 local InfectionBagID = "fd8a16"
 local DiceAreaID ="ba46a1"
 local TreatmentAreaID ="b951e9"
 local PurpleWaitingAreaID = "114337"
+local HotZoneBagID = "35e2b9"
+local MutationBagID ="6a363d"
 local Infection_Track = {
 	{ -1.519, 1.2, -4.775 },
 	{-0.8508, 1.2, -4.929 },
@@ -38,11 +43,13 @@ local Infection_Track = {
 	{-2.686,1.3,5.699},
 	{-4.479,1.3,4.334}
 }
-
-local Centres = {{-8.5,3.6,11},{3.19,3.6,12},{10.4,3.6,5.5},{10.68,3.6,-5},{0.58, 3.6,-11},{-8.8,3.6,-8.3},{-12.2,3.6,0.5}}
+local OutBreak_Track = {
+	{-4.838,1.3,-2.623}, {-5.3237,1.3,-1.7109},{-5.587,1.3,-1.058},{-5.72,1.3,-0.391},{-5.812,1.3,0.2845},{-5.8465,1.3,1.01},{-5.765,1.3,1.735},{-5.621,1.3,2.434},{-4.479,1.3,4.334}
+}
+local Centres = {{-8.5,3.6,11},{3.19,3.6,12},{10.4,3.6,5.5},{10.68,3.6,-5},{0.58, 3.6,-11},{-8.8,3.6,-8.3},{-8.5,3.6,11},{-12.2,3.6,0.5}}
 
 local coasterIDs = {"156585","f69abf","0d0fef","31b265","4e7bdc","cfdf8e" }
-local coasterZoneIDs ={"0c267e","e8c412","b6029e", "a86ccd", "dd41f3", "8d0dc8"}
+local coasterZoneIDs ={"0c267e","e8c412","b6029e", "a86ccd", "731c5c", "8d0dc8"}
 
 
 local RedFaces ={8,6,6,1,1,4 }
@@ -51,7 +58,8 @@ local BlueFaces = { 8,1,2,6,6,3}
 local BlackFaces = {8,3,5,3,3,4}
 --[[ The onLoad event is called after the game save finishes loading. --]]
 function onLoad()
-create_BioHazard_button()
+
+	create_Ring_Buttons()
 end
 
 function CheckZone(zoneNo)
@@ -63,7 +71,7 @@ function CheckZone(zoneNo)
 	local black = 0
 
 	for _, die in ipairs(infectedDice) do
-		waitFrames(10)
+
 		if die.getName() == "Red"   then
 			red = red + 1
 		end
@@ -80,22 +88,65 @@ function CheckZone(zoneNo)
 			black = black + 1
 		end
 	end
-	if red > 2 or blue > 2 or yellow > 2 or black > 2 or purple > 2 then
+	if red > 3 or blue > 3 or yellow > 3 or black > 3 or purple > 3 then
+
+		print("start flip")
 		FlipCoaster(zoneNo)
+		print("endflip")
+		waitFrames(40)
+	else
+
+		tile = getObjectFromGUID(coasterIDs[zoneNo])
+		if tile.getLock() == false then
+			print("locking ZONE CHECK", zoneNo, Time.time)
+			waitFrames(40)
+			lockCoaster(zoneNo)
+
+		end
+
 	end
 end
+
+function ReFlipCoaster(costerID)
+	function Flip()
+		tile = getObjectFromGUID(coasterIDs[costerID])
+		if tile.is_face_down == true then
+			tile.setLock(false)
+			tile.flip()
+			waitFrames(75)
+		--	tile.setLock(true)
+		end
+		return 1
+	end
+	startLuaCoroutine(self, "Flip")
+end
+
+
+function lockCoaster(ID)
+	function lock()
+	local	lockTile = getObjectFromGUID(coasterIDs[ID])
+		waitFrames(75)
+		print("locking", ID, " -> ", Time.time)
+		lockTile.setLock(true)
+		return 1
+	end
+	startLuaCoroutine(self, "lock")
+end
+
 
 
 function FlipCoaster(costerID)
 	function Flip()
 		tile = getObjectFromGUID(coasterIDs[costerID])
-		tile.setLock(false)
-		tile.flip()
-		waitFrames(75)
-		tile.setLock(true)
+		if tile.is_face_down == false then
+			tile.setLock(false)
+			tile.flip()
+			waitFrames(75)
+		--	lockCoaster(costerID)
+		end
 		return 1
 	end
-	startLuaCoroutine(self, Flip)
+	startLuaCoroutine(self, "Flip")
 end
 
 function EndTurn()
@@ -104,6 +155,10 @@ end
 
 function PlaceDice()
 	startLuaCoroutine(Global, 'PlaceDiceTime')
+end
+
+function ProcessOutbreaks()
+	startLuaCoroutine(Global, 'ProcessOutbreaksTime')
 end
 
 function Undo_BioHazard_Dice()
@@ -123,7 +178,106 @@ function onUpdate()
 --    [[ print('onUpdate loop!') ]]
 end
 
-function create_BioHazard_button()
+function EasyGame()
+	CurrentInfectionPoint = 1
+	getObjectFromGUID(Re_Ball_ID).setPosition(Infection_Track[CurrentInfectionPoint])
+end
+
+function MediumGame()
+	CurrentInfectionPoint = 5
+	getObjectFromGUID(Re_Ball_ID).setPosition(Infection_Track[CurrentInfectionPoint])
+end
+
+function HardGame()
+	CurrentInfectionPoint = 9
+	getObjectFromGUID(Re_Ball_ID).setPosition(Infection_Track[CurrentInfectionPoint])
+end
+
+
+function HotZones()
+	startLuaCoroutine(Global, "HotZonesTime")
+end
+
+function HotZonesTime()
+	local bag = getObjectFromGUID(HotZoneBagID)
+	bag.shuffle()
+	local displacement = 2
+	for i =1 , 6 do
+		local params = {}
+		params.position = Centres[i]
+		params.position[3] = params.position[3] + displacement
+		local hotDie = bag.takeObject(params)
+			waitFrames(30)
+			hotDie.roll()
+			--print(hotDie.getName())
+
+	end
+
+	return 1
+end
+
+function MutationChallange()
+	startLuaCoroutine(Global, 'MutationChallangeTime')
+end
+
+function MutationChallangeTime()
+	local bag = getObjectFromGUID(MutationBagID)
+	local params = {}
+	params.position = {-30,10,21}
+	for i=1, 12 do
+		bag.takeObject(params)
+		waitFrames(15)
+	end
+	return 1
+end
+
+function StartGame()
+local coin = getObjectFromGUID(RingID)
+local bag =  getObjectFromGUID(InfectionBagID)
+bag.shuffle()
+coin.destruct()
+create_CDC_buttons()
+end
+
+function create_Ring_Buttons()
+	local params = {}
+	params.click_function = "EasyGame"
+	params.label = "Easy Game"
+	params.position = {0, 0.1, -4}
+	params.rotation = {0,0, 0}
+	params.width = 1200
+	params.height = 400
+	params.font_size = 160
+	getObjectFromGUID(RingID).createButton(params)
+	params.click_function = "MediumGame"
+	params.label = "Medium Game"
+	params.width = 1500
+	params.position = {0, 0.1, -3}
+	getObjectFromGUID(RingID).createButton(params)
+	params.width = 1700
+	params.click_function = "HardGame"
+	params.label = "Hard Game"
+	params.position = {0, 0.1, -2}
+	getObjectFromGUID(RingID).createButton(params)
+	params.width = 1700
+	params.click_function = "HotZones"
+	params.label = "Hot Zones"
+	params.position = {0, 0.1,-0.5}
+	getObjectFromGUID(RingID).createButton(params)
+	params.width = 1500
+	params.click_function = "MutationChallange"
+	params.label = "Mutation Challange"
+	params.position = {0, 0.1, 0.5}
+	getObjectFromGUID(RingID).createButton(params)
+	params.width = 1200
+	params.click_function = "StartGame"
+	params.label = "Start Game Now"
+	params.position = {0, 0.1, 1.5}
+	params.color = {r=0.90,g=0.0,b=0.0}
+	getObjectFromGUID(RingID).createButton(params)
+end
+
+function create_CDC_buttons()
 	local params = {}
 	params.click_function = "bioHazard_Dice"
 	params.label = "BioHazard"
@@ -135,11 +289,15 @@ function create_BioHazard_button()
 	getObjectFromGUID(CDC_DiscID).createButton(params)
 	params.click_function = "EndTurn"
 	params.label = "End Turn"
-	params.position = {2.7, 0.1, -0.1}
+	params.position = {2.5, 0.1, -0.1}
 	getObjectFromGUID(CDC_DiscID).createButton(params)
 	params.click_function = "PlaceDice"
 	params.label = "Place Infection Dice"
 	params.position = {2.5, 0.1, -0.7}
+	getObjectFromGUID(CDC_DiscID).createButton(params)
+	params.click_function = "ProcessOutbreaks"
+	params.label = "Handle Outbreaks"
+	params.position = {2.5, 0.1, -1.3}
 	getObjectFromGUID(CDC_DiscID).createButton(params)
 	params.click_function = "Undo_BioHazard_Dice"
 	params.label = "Undo BioHazard"
@@ -161,6 +319,48 @@ function Undo_BioHazard_DiceTime()
 	return 1
 end
 
+function ProcessOutbreaksTime()
+	local colours = {"Red", "Blue", "Yellow", "Black", "Purple"}
+	local count = 0
+	local cleared = false
+	for i=1, 6 do
+		cleared = false
+		tile = getObjectFromGUID(coasterIDs[i])
+		for j=1, 5 do
+			count = 0
+			if tile.is_face_down == true then
+				local InfectionDice = getObjectFromGUID(coasterZoneIDs[i]).getObjects()
+				for _, die in ipairs(InfectionDice) do
+					if die.getName() == colours[j] then
+						count = count +1
+						if count > 3 then
+							cleared = true
+							die.setPositionSmooth(Centres[i+1], false,false)
+							waitFrames(20)
+						end
+					end
+				end
+			end
+		end
+		if cleared == true then
+			waitFrames(30)
+			OutBreakTrackNext()
+			ReFlipCoaster(i)
+			for k=1 , 6 do
+				CheckZone(k)
+			end
+		end
+	end
+	return 1
+end
+
+function OutBreakTrackNext()
+	CurrentOutBreakPoint = CurrentOutBreakPoint + 1
+	getObjectFromGUID(BlueBallID).setPosition(OutBreak_Track[CurrentOutBreakPoint])
+	if CurrentOutBreakPoint == 9 then
+		print("Game Over")
+	end
+end
 function bioHazard_Dice()
 
 	CurrentInfectionPoint = CurrentInfectionPoint + 1
@@ -258,7 +458,7 @@ local newDice = getObjectFromGUID(DiceAreaID).getObjects()
 for _, die in ipairs(newDice) do
 		waitFrames(10)
 		if die.getValue() == 1 then
-				die.setPositionSmooth(Centres[7], false,false)
+				die.setPositionSmooth(Centres[8], false,false)
 		else
 		if die.getName() == "Red" then
 			die.setPositionSmooth(Centres[RedFaces[die.getValue()]], false,false)

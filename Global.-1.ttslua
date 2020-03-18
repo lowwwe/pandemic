@@ -1,8 +1,9 @@
 --[[ Lua code. See documentation: https://api.tabletopsimulator.com/ --]]
+local colours = {"Red", "Blue", "Yellow", "Black", "Purple"}
 local CDC_DiscID ="0ceb73"
 local Re_Ball_ID ="a2ee29"
 local BlueBallID = "700bc2"
-local RingID = "070292"
+local RingID = "a9574e"
 local CurrentInfectionPoint = 1
 local CurrentOutBreakPoint = 1
 local InfectionRate = 3
@@ -244,7 +245,7 @@ function create_Ring_Buttons()
 	params.click_function = "EasyGame"
 	params.label = "Easy Game"
 	params.position = {0, 0.1, -4}
-	params.rotation = {0,0, 0}
+	params.rotation = {0,00, 0}
 	params.width = 1200
 	params.height = 400
 	params.font_size = 160
@@ -275,7 +276,126 @@ function create_Ring_Buttons()
 	params.position = {0, 0.1, 1.5}
 	params.color = {r=0.90,g=0.0,b=0.0}
 	getObjectFromGUID(RingID).createButton(params)
+	createZoneButtons(1)
+	createZoneButtons(2)
+	createZoneButtons(3)
+	createZoneButtons(4)
+	createZoneButtons(5)
+	createZoneButtons(6)
+	createTreatmentZoneButtons()
 end
+
+function Treat51()	Treat(5,1) end
+function Treat41()	Treat(4,1) end
+function Treat31()	Treat(3,1) end
+function Treat21()	Treat(2,1) end
+function Treat11()	Treat(1,1) end
+
+function Treat52()	Treat(5,2) end
+function Treat42()	Treat(4,2) end
+function Treat32()	Treat(3,2) end
+function Treat22()	Treat(2,2) end
+function Treat12()	Treat(1,2) end
+
+function Treat1() TreatRemove(1) end
+function Treat2() TreatRemove(2) end
+function Treat3() TreatRemove(3) end
+function Treat4() TreatRemove(4) end
+function Treat5() TreatRemove(5) end
+
+function TreatRemove(colour)
+	local found = false
+	local InfectionDice = getObjectFromGUID(TreatmentAreaID).getObjects()
+	for _, die in ipairs(InfectionDice) do
+		if die.getName() == colours[colour] then
+			if found == false then
+				found = true
+				die.setPositionSmooth({-31,6,21}, false,false)
+			end
+		end
+	end
+	if found == false then
+		print( "No " .. colours[colour]  .. " dice to treat!" )
+	end
+end
+
+function Treat(colour,id)
+	local found = false
+	local InfectionDice = getObjectFromGUID(coasterZoneIDs[id]).getObjects()
+	for _, die in ipairs(InfectionDice) do
+		if die.getName() == colours[colour] then
+			if found == false then
+				found = true
+				die.setPositionSmooth({0,4,0}, false,false)
+			end
+		end
+	end
+	if found == false then
+		print( "No " .. colours[colour]  .. " dice to treat!" )
+	end
+end
+
+function createZoneButtons(id)
+
+	local params = {}
+	params.click_function = "Treat3" .. id
+	params.label = "X"
+	params.position = {0, 0.1, -1.2}
+	params.rotation = {0,0, 0}
+	params.width = 200
+	params.height = 200
+	params.font_size = 160
+	params.color = {r=0.90,g=0.90,b=0.0}
+	getObjectFromGUID(coasterIDs[id]).createButton(params)
+	params.click_function = "Treat1" .. id
+	params.position = {0.5, 0.1, -1.09}
+	params.color = {r=0.90,g=0.40,b=0.0}
+	getObjectFromGUID(coasterIDs[id]).createButton(params)
+	params.click_function = "Treat2" .. id
+	params.position = {0.93, 0.1, -0.79}
+	params.color = {r=0.0,g=0.0,b=0.90}
+	getObjectFromGUID(coasterIDs[id]).createButton(params)
+	params.click_function = "Treat4" .. id
+	params.position = {1.17, 0.1, -0.4}
+	params.color = {r=0.0,g=0.0,b=0.0}
+	params.font_color = {r=1.0,g=1.0,b=1.0}
+	getObjectFromGUID(coasterIDs[id]).createButton(params)
+	params.click_function = "Treat5" .. id
+	params.position = {1.2, 0.1, 0.1}
+	params.color = {r=0.50,g=0.0,b=0.50}
+	getObjectFromGUID(coasterIDs[id]).createButton(params)
+end
+
+function createTreatmentZoneButtons()
+
+		local params = {}
+		params.click_function = "Treat3"
+		params.label = "X"
+		params.position = {-1.25, 0.1, 0.8}
+		params.rotation = {0,180, 0}
+		params.width = 200
+		params.height = 200
+		params.font_size = 160
+		params.color = {r=0.90,g=0.90,b=0.0}
+		getObjectFromGUID(CDC_DiscID).createButton(params)
+		params.click_function = "Treat1"
+		params.position = {-1.25, 0.1, 0.4}
+		params.color = {r=0.90,g=0.40,b=0.0}
+		getObjectFromGUID(CDC_DiscID).createButton(params)
+		params.click_function = "Treat2"
+		params.position = {-1.25, 0.1, 0.0}
+		params.color = {r=0.0,g=0.0,b=0.90}
+		getObjectFromGUID(CDC_DiscID).createButton(params)
+		params.click_function = "Treat4"
+	params.position = {-1.25, 0.1, -0.4}
+		params.color = {r=0.0,g=0.0,b=0.0}
+		params.font_color = {r=1.0,g=1.0,b=1.0}
+		getObjectFromGUID(CDC_DiscID).createButton(params)
+		params.click_function = "Treat5"
+		params.position = {-1.25, 0.1, -0.8}
+		params.color = {r=0.50,g=0.0,b=0.50}
+		getObjectFromGUID(CDC_DiscID).createButton(params)
+		end
 
 function create_CDC_buttons()
 	local params = {}
@@ -310,6 +430,7 @@ function create_CDC_buttons()
 	getObjectFromGUID(CDC_DiscID).createButton(params)
 end
 
+
 function Undo_BioHazard_DiceTime()
 	if CurrentInfectionPoint > 1 then
 		CurrentInfectionPoint = CurrentInfectionPoint - 1
@@ -320,7 +441,7 @@ function Undo_BioHazard_DiceTime()
 end
 
 function ProcessOutbreaksTime()
-	local colours = {"Red", "Blue", "Yellow", "Black", "Purple"}
+
 	local count = 0
 	local cleared = false
 	for i=1, 6 do
